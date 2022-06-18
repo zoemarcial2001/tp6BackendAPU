@@ -12,13 +12,13 @@ personaCtrl.addPersona = async (req, res) => {
     try {
         await persona.save();
         res.json({
-            'status' : '1',
-            'msg' : 'Persona guardada'
+            status : '1',
+            msg : 'Persona guardada'
         })
     } catch (error) {
         res.json({
-            'status' : '0',
-            'msg' : 'Error, no se guardó la persona'
+            status : '0', 
+            msg : 'Error, no se guardó la persona'
         })
     }
 }
@@ -27,5 +27,6 @@ personaCtrl.getPersona = async (req, res) => {
     var persona = await Persona.findById(req.params.id);
     res.json(persona);
 }
+
 
 module.exports = personaCtrl ;

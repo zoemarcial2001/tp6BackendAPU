@@ -1,41 +1,63 @@
 const Transaccion = require("../models/transaccion");
+const Persona = require("../models/persona")
 
 const transaccionCtrl = {};
 
-transaccionCtrl.hacerTransaccion = async (req, res) => {
-    var transaccion = new Transaccion(req.body);
+transaccionCtrl.getTransaccions = async(req, res) => {
     try {
-        await transaccion.save();
-        res.json({
-            'status': '1',
-            'msg': 'Transaccion guardado.'
-        })
+        var transaccions = await Transaccion.find();
+        res.json(transaccions);
     } catch (error) {
-        res.status(400).json({
-            'status': '0',
-            'msg': 'Error procesando operacion.'
+        console.log(error)
+        res.json({
+            status: '1',
+            msg: 'Error ',
+
         })
     }
 }
+transaccionCtrl.createTransaccion = async(req, res) => {
+    var transaccion = new Transaccion(req.body);
+    try {
+        const persona = await Persona.findOne({ emailCliente: transaccion.email })
 
-transaccionCtrl.getTransacciones = async (req, res) => {
-    var transacciones = await Transaccion.find();
-    res.json(transacciones);
+        if (!persona) throw new Error('Persona no existe')
+
+        await transaccion.save();
+        res.json({
+            status: '1',
+            msg: 'Transaccion guardado.'
+        })
+    } catch (error) {
+        console.log(error)
+        res.json({
+            status: '0',
+            msg: 'Error procesando operacion.',
+
+        })
+    }
 }
+transaccionCtrl.getTransaccionesFiltro = async(req, res) => {
+    try {
+        const origen = req.query.origen,
+            destino = req.query.destino,
+            email = req.query.email;
+        var transacciones = await Transaccion.find();
+        if (origen != undefined && destino != undefined) transacciones = await Transaccion.find({
+            monedaOrigen: origen,
+            monedaDestino: destino
+        })
+        
+        if (email != undefined) transacciones = await Transaccion.find({ email: email })
+        res.json(transacciones)
+    } catch (error) {
+        console.log(error)
+        res.json({
+            status: '0',
+            msg: 'Error al filtrar transacciones por divisas',
 
-transaccionCtrl.getTransaccionesCliente = async (req, res) => {
-    var transaccionesCliente = await Transaccion.find({"emailCliente": req.params.email });
-    res.json(transaccionesCliente);
-}
-
-transaccionCtrl.getTransaccionesDestino = async (req, res) => {
-
-    var transacciones = await Transaccion.find({"monedaOrigen": req.params.moneda });
-    var transaccionesD = await Transaccion.find({"monedaDestino": req.params.moneda })
-    transaccionesD.forEach((t) => {
-        transacciones.push(t)
-    })
-    res.json(transacciones)
+        })
+    }
 }
 
 module.exports = transaccionCtrl;

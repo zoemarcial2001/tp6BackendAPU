@@ -1,77 +1,101 @@
-const pasaje = require('../models/pasaje');
-
+const Pasaje = require('../models/pasaje');
+const Pasajero = require('../models/persona')
 const pasajeCtrl = {};
 
-pasajeCtrl.getPasajes = async (req, res) => {
-    var criterios = {};
-    var pasajes;
-
-    if(req.query.categoriaPasajero != '')
-        criterios.categoriaPasajero = req.query.categoriaPasajero
-
-    pasajes = await pasaje.find(criterios).populate('pasajero');
-
-    res.json(pasajes);
-}
-
-pasajeCtrl.getPasaje = async (req, res) => {
-    var pasaje = await pasaje.findById(req.params.id);
-    res.json(pasaje);
-}
-
-pasajeCtrl.addPasaje = async (req, res) => {
-    var pasaje = new pasaje(req.body);
+pasajeCtrl.getPasajes = async(req, res) => {
     try {
-        pasaje.save();
-        res.json({
-            'status' : '1',
-            'msg' : 'Pasaje guardado'
-        })
+        var pasajes = await Pasaje.find().populate("pasajero");
+        res.status(200).json(pasajes);
     } catch (error) {
-        res.json({
-            'status' : '0',
-            'msg' : 'Error no se guardo el pasaje'
+        console.log(error)
+        res.status(400).json({
+            status: 0,
+            msg: "Error al obtener los pasajes"
         })
     }
 }
-
-pasajeCtrl.deletePasaje = async (req, res) => {
-    console.log(req.params)
+pasajeCtrl.getPasaje = async(req, res) => {
+        var pasaje = await Pasaje.findById(req.params._id);
+        res.json(pasaje)
+}
+pasajeCtrl.createPasaje = async(req, res) => {
+    const pasaje = new Pasaje(req.body);
     try {
-        await pasaje.deleteOne({_id : req.params.id});
-        res.json({
-            'status' : '1',
-            'msg' : 'Pasaje eliminado'
+        if (pasaje.categoriaPasajero != 'm' && pasaje.categoriaPasajero != 'a' && pasaje.categoriaPasajero != 'j')
+            throw new Error('Categoria de Pasajero invalida')
+
+        const persona = await Pasajero.findById(pasaje.pasajero._id)
+        if (!persona) throw new Error('Persona no Existe')
+
+        await pasaje.save();
+        res.status(200).json({
+            status: '1',
+            msg: 'Pasaje guardado.'
         })
     } catch (error) {
-        res.json({
-            'status' : '0',
-            'msg' : 'Error no se pudo eliminar el pasaje'
+        console.log(error)
+        res.status(400).json({
+            status: '0',
+            msg: 'Error al crear Pajase'
         })
     }
 }
-
-pasajeCtrl.editPasaje = async (req, res) => {
-    var pasajed = new pasaje(req.body);
+pasajeCtrl.filterPasajesByCategoria = async(req, res) => {
     try {
-        var d = await pasaje.updateOne({_id: req.body._id}, pasajed);
-        res.json({
-            'status' : '1',
-            'msg' : 'Pasaje actualizado'
-        })
+        const categoria = req.params.categoria;
+        if (categoria != 'm' && categoria != 'a' && categoria != 'j')
+            throw new Error('Categoria de Pasajero invalida')
+
+        const pasajes = await Pasaje.find({ categoriaPasajero: categoria });
+        res.status(200).json(pasajes);
     } catch (error) {
-        res.json({
-            'status' : '0',
-            'msg' : 'No se puedo modificar el pasaje'
+        console.log(error)
+        res.status(400).json({
+            status: '0',
+            msg: 'Error al filtrar pasajes'
         })
     }
 }
+pasajeCtrl.editPasaje = async(req, res) => {
+    const id = req.params.id;
+    const pasaje = req.body;
+    try {
+        if (pasaje.categoriaPasajero != 'm' && pasaje.categoriaPasajero != 'a' && pasaje.categoriaPasajero != 'j')
+            throw new Error('Categoria de Pasajero invalida')
 
-pasajeCtrl.getPasajesByCategoriaPasajero = async (req, res) => {
-    var pasajes = await pasaje.find({    
-        categoriaPasajero: req.params.categoriaPasajero
-    })
-    res.json(pasajes);
+        const persona = await Pasajero.findById(pasaje.pasajero)
+
+        if (!persona) throw new Error('Persona no Existe')
+
+        await Pasaje.updateOne({ _id: id }, pasaje);
+        res.status(200).json({
+            status: '1',
+            msg: 'Pasaje Actualizado correctamente'
+        })
+    } catch (error) {
+        console.log(error)
+        res.status(400).json({
+            status: '0',
+            msg: 'Error al actualizar Pasaje',
+        })
+    }
+}
+pasajeCtrl.deletePasaje = async(req, res) => {
+    id = req.params.id;
+    try {
+        const pasaje = await Pasaje.findById(id)
+        await Pasaje.deleteOne({ _id: pasaje.id });
+        res.status(200).json({
+            status: '1',
+            msg: 'Pasaje Eliminado correctamente'
+        })
+    } catch (error) {
+        console.log(error)
+        res.status(400).json({
+            status: '0',
+            msg: 'Error procesando la operacion',
+        })
+    }
 }
 
 module.exports = pasajeCtrl;
